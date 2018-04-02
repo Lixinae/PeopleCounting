@@ -17,6 +17,7 @@ class VxlFrame:
 	def __init__(self, attributes):
 		self.amplitude = attributes["amplitude"]
 		self.depth = attributes["depth"]
+		self.shape = self.amplitude.shape
 
 class VxlVideo:
 
@@ -28,6 +29,26 @@ class VxlVideo:
 
 	def __getitem__(self, index):
 		return self.frames[index]
+		
+	def __len__(self):
+		return len(self.frames)
+
+	def avgFrame(self, index, n):
+		begin = max(0, index-n)
+		end = min(len(self.frames)-1, index+n)
+		size = end - begin + 1
+		depth = np.zeros(self.frames[begin].shape)
+		amplitude = np.zeros(self.frames[begin].shape)
+		for i in range(begin,end+1):
+			amplitude += self.frames[i].amplitude
+			depth += self.frames[i].depth
+		amplitude = amplitude/size
+		depth = depth/size
+		return VxlFrame({
+			"amplitude" : amplitude,
+			"depth" : depth
+		})
+		
 
 	@staticmethod
 	def read(vxlFile, cameraInfo):
@@ -39,6 +60,7 @@ class VxlVideo:
 			if not reader.readNext(): ###todo check warning
 				raise ValueError("Failed to read frame number " +  str(i))
 			"""
+			other:
 			Voxel.ToF1608Frame
 			Voxel.RawDataFrame
 			Voxel.DepthFrame
@@ -56,3 +78,18 @@ class VxlVideo:
 			frames.append(VxlFrame(attributes))
 		reader.close()
 		return VxlVideo(frames)
+		
+	@staticmethod
+	def readAsAvgImage(vxlFile, cameraInfo):
+		video = VxlVideo.read(vxlFile, cameraInfo)
+		depth = np.zeros(cameraInfo.resolution)
+		amplitude = np.zeros(cameraInfo.resolution)
+		for frame in video:
+			amplitude += frame.amplitude
+			depth += frame.depth
+		amplitude = amplitude/len(video)
+		depth = depth/len(video)
+		return VxlFrame({
+			"amplitude" : amplitude,
+			"depth" : depth
+		})
