@@ -8,9 +8,9 @@ from skimage.morphology import disk
 
 cameraInfo = VxlCameraInfo('OPT8241')
 
-background = VxlVideo.readAsAvgImage("videos/nv/test_27_3_ap_short_range.vxl", cameraInfo)
+background = VxlVideo.readAsAvgImage("videos/video_1_ap.vxl", cameraInfo)
 
-video = VxlVideo.read("videos/nv/test_27_3_1p_short_range.vxl", cameraInfo)
+video = VxlVideo.read("videos/video_1.vxl", cameraInfo)
 
 
 miniv = min(min([frame.amplitude.min() for frame in video]),background.amplitude.min())
