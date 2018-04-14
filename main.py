@@ -90,12 +90,13 @@ def isPerson(img, sigma):
         #          xy=(i, som[i]),
         #          arrowprops={'facecolor': 'black', 'shrink': 0.05})
     plt.show()  # affiche la figure a l'ecran
-    if len(maxm[0]) < 3:
-        return False
-    isMiddleMax = filtered[maxm[0][1]] > filtered[maxm[0][0]] and filtered[maxm[0][1]] > filtered[maxm[0][2]]
 
-    return len(maxm[0]) == 3 and isMiddleMax
+    if len(maxm[0]) == 1:
+        return True
 
+    if len(maxm[0]) == 3:
+        return len(maxm[0]) == 3 and (filtered[maxm[0][1]] > filtered[maxm[0][0]] and filtered[maxm[0][1]] > filtered[maxm[0][2]])
+    return False
 
 for i in range(len(video)):
     img = process(video.avgFrame(i, 1))
