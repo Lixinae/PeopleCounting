@@ -60,9 +60,53 @@ def process(frame):
     return np.logical_or(depth_objects(frame), amplitude_objects(frame))
 
 
+from scipy.signal import *
+from scipy.ndimage import *
+
+
+def isPerson(img, sigma):
+    som = []
+    h, w = img.shape
+    for i in range(w):
+        tmpSum = 0
+        for j in range(h):
+            tmpSum += img[j][i]
+        som.append(tmpSum)
+
+    x = np.array(range(w))
+    filtered = filters.gaussian_filter1d(som, sigma)
+    y = np.array(filtered)
+
+    maxm = argrelmax(y)
+    #minm = argrelextrema(y, np.less)
+
+    plt.plot(x, y)
+
+    for i in maxm:
+        plt.plot(i, filtered[i], 'o', color="red")
+        # plt.annotate('Max Local',
+        #          ha='center', va='bottom',
+        #          xytext=(-1.5 +i, 3. +som[i]),
+        #          xy=(i, som[i]),
+        #          arrowprops={'facecolor': 'black', 'shrink': 0.05})
+    plt.show()  # affiche la figure a l'ecran
+    if len(maxm[0]) < 3:
+        return False
+    isMiddleMax = filtered[maxm[0][1]] > filtered[maxm[0][0]] and filtered[maxm[0][1]] > filtered[maxm[0][2]]
+
+    return len(maxm[0]) == 3 and isMiddleMax
+
+
 for i in range(len(video)):
+    img = process(video.avgFrame(i, 1))
+
+    plt.figure(2)
     plt.clf()
-    plt.imshow(process(video.avgFrame(i, 1)), cmap=plt.cm.Greys_r)
+    isPerson(img, 3)
+
+    plt.figure(1)
+    plt.clf()
+    plt.imshow(img, cmap=plt.cm.Greys_r)
     nb_people = 1
     plt.text(15, 23, 'people : ' + str(nb_people), bbox={'facecolor': 'white', 'alpha': 0.5, 'pad': 10})
     plt.axis('off')
