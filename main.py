@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 from skimage import data
 from skimage.morphology import disk
 from scipy.signal import *
-from scipy.ndimage import *
+from scipy.ndimage import filters
+
 
 def amplitude_objects(frame, amplitude_min, amplitude_max, openingKernelSize=5):
     foreground = abs(frame.amplitude - background.amplitude)
@@ -35,59 +36,71 @@ def binary_image(frame, amplitude_min, amplitude_max, depth_min, depth_max, chan
     return np.logical_or(amplitude, depth)
 
 
-# from scipy.signal import *
-from scipy.ndimage import filters
-
-
-def testsum(binary_frame, sigma=3.0):
+def compute_shape_descriptors(binary_frame, sigma=0.95, threshold=0.):
     vertical_sum = binary_frame.sum(axis=0)
-    vertical_sum = filters.gaussian_filter1d(vertical_sum, sigma)
-    return vertical_sum
+    vertical_sum = filters.gaussian_filter1d(vertical_sum, (sigma / 100) * vertical_sum.shape[0])
+    descriptors = []
+    current_descriptor = []
+    for value in vertical_sum:
+        if value > threshold:
+            current_descriptor.append(value)
+        elif current_descriptor != []:
+            descriptors.append(current_descriptor)
+            current_descriptor = []
+    return vertical_sum, descriptors
 
 
-def count_people(frame, amplitude_min, amplitude_max, depth_min, depth_max):
-    """objects = binary_image(frame, amplitude_min, amplitude_max, depth_min, depth_max)
+def is_people(shape_descriptor):
+    y = np.array(shape_descriptor)
+    maxm = argrelextrema(y, np.greater_equal)
+    print(maxm)
+    for i in maxm[0]:
+        plt.plot(i, shape_descriptor[i], 'o', color="red")
+    return len(maxm[0]) > 5
 
 
-    sigma = 3.0
-    vertical_sum = objects.sum(axis=0)
-    vertical_sum = filters.gaussian_filter1d(vertical_sum, sigma)"""
+# if len(maxm[0]) == 1:
+#    return True
 
-    return 0
+# if len(maxm[0]) == 3:
+#    return len(maxm[0]) == 3 and (shape_descriptor[maxm[0][1]] > shape_descriptor[maxm[0][0]] and shape_descriptor[maxm[0][1]] > shape_descriptor[maxm[0][2]])
+# return False
+
+def count_people(shape_descriptors):
+    return len([shape_descriptor for shape_descriptor in shape_descriptors if is_people(shape_descriptor)])
 
 
 cameraInfo = VxlCameraInfo('OPT8241')
 
+# background = VxlVideo.readAsAvgImage("videos/nv/test_27_3_ap_short_range.vxl", cameraInfo)
+
+# video = VxlVideo.read("videos/nv/test_27_3_1p_short_range.vxl", cameraInfo)
 background = VxlVideo.readAsAvgImage("videos/video_1_ap.vxl", cameraInfo)
 
 video = VxlVideo.read("videos/video_1.vxl", cameraInfo)
-
 amplitude_min = min(min([frame.amplitude.min() for frame in video]), background.amplitude.min())
 amplitude_max = max(max([frame.amplitude.max() for frame in video]), background.amplitude.max())
 depth_min = min(min([frame.depth.min() for frame in video]), background.depth.min())
 depth_max = max(max([frame.depth.max() for frame in video]), background.depth.max())
-
+nb_people = 0
 for frame in video:
-
     binary_frame = binary_image(frame, amplitude_min, amplitude_max, depth_min, depth_max)
+    vertical_sum, shape_descriptors = compute_shape_descriptors(binary_frame)
 
     plt.figure(1)
     plt.clf()
     plt.imshow(binary_frame, cmap=plt.cm.Greys_r)
     # plt.imshow(frame.amplitude, cmap=plt.cm.Greys_r)
     # plt.imshow(frame.depth, cmap=plt.cm.Greys_r)
-    nb_people = count_people(frame, amplitude_min, amplitude_max, depth_min, depth_max)
     plt.text(15, 23, 'people : ' + str(nb_people), bbox={'facecolor': 'white', 'alpha': 0.5, 'pad': 10})
     plt.axis('off')
 
     plt.figure(2)
     plt.clf()
-    som = testsum(binary_frame)
-    y = np.array(som)
-    maxm = argrelmax(y)
-    plt.plot(som)
-    for i in maxm:
-        plt.plot(i, som[i], 'o', color="red")
+    plt.xticks(range(0, 350, 40))
+    plt.yticks(range(0, 300, 40))
+    plt.plot(vertical_sum)
+    nb_people = count_people(shape_descriptors)
 
     plt.pause(0.001)
 
