@@ -35,12 +35,12 @@ class VxlVideo:
 
 	@staticmethod
 	def read(vxlFile, cameraInfo):
-		reader = Voxel.FrameStreamReader(vxlFile, cameraInfo.system) ###todo check warning
+		reader = Voxel.FrameStreamReader(vxlFile, cameraInfo.system)
 		if not reader.isStreamGood():
 			raise ValueError("Stream is not good: " + vxlFile)
 		frames = list()
 		for i in range(reader.size()):
-			if not reader.readNext(): ###todo check warning
+			if not reader.readNext():
 				raise ValueError("Failed to read frame number " +  str(i))
 			rawProcessedFrame = Voxel.ToF1608Frame.typeCast(reader.frames[Voxel.DepthCamera.FRAME_RAW_FRAME_PROCESSED])
 			depthFrame = Voxel.DepthFrame.typeCast(reader.frames[Voxel.DepthCamera.FRAME_DEPTH_FRAME])
