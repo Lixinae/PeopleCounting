@@ -92,3 +92,4 @@ for frame in video:
 	plt.axis('off')
 	plt.pause(0.001)
 
+plt.close()
